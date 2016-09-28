@@ -1,6 +1,5 @@
 #Courtesy of Pgoapi, tjado, and Adafruit 
-#Works for Raspberry pi zero 
-#More details will be added later on
+#For Raspberry pi zero 
 
 import os
 import sys
@@ -12,6 +11,7 @@ import getpass
 import argparse
 import random
 from subprocess import call
+from gpiozero import LED 
 
 import RPi.GPIO as GPIO
 from time import sleep
@@ -28,6 +28,82 @@ RARE_POKE = [142,59,12,113,91,85,147,51,125,83,22,136,55,44,107,97,135,99,108,68
 VERY_RARE_POKE = [65,15,5,87,148,103,94,76,130,2,141,115,131,105,89,34,31,139,18,127,62,26,80,134,49,71,45,8,70]
 EPIC_POKE = [9,6,36,149,128,3]
 LEGENDARY_POKE = [144,132,151,150,146,145]
+
+#Assign gpio pinouts 
+led1 = LED(17)
+led2 = LED(27)
+led3 = LED(22)
+
+#Function to enable or disable the LEDs 
+def enable_led(pinNum, enableOrNot):
+    if enableOrNot:
+        GPIO.output(pinNum, True)
+    else:
+        GPIO.output(pinNum, False)
+
+#Initial configuration
+#Courtesy to Tjado 
+def init_config():
+    parser = argparse.ArgumentParser()
+    config_file = "config.json"
+
+    # If config file exists, load variables from json
+    load   = {}
+    if os.path.isfile(config_file):
+        with open(config_file) as data:
+            load.update(json.load(data))
+
+    # Read passed in Arguments
+    required = lambda x: not x in load
+    parser.add_argument("-a", "--auth_service", help="Auth Service ('ptc' or 'google')",
+        required=required("auth_service"))
+    parser.add_argument("-u", "--username", help="Username", required=required("username"))
+    parser.add_argument("-p", "--password", help="Password")
+    parser.add_argument("-l", "--location", help="Location", required=required("location"))
+    parser.add_argument("-d", "--debug", help="Debug Mode", action='store_true')
+    parser.add_argument("-t", "--test", help="Only parse the specified location", action='store_true')
+    parser.set_defaults(DEBUG=False, TEST=False)
+    config = parser.parse_args()
+
+    # Passed in arguments shoud trump
+    for key in config.__dict__:
+        if key in load and config.__dict__[key] == None:
+            config.__dict__[key] = str(load[key])
+
+    if config.__dict__["password"] is None:
+        log.info("Secure Password Input (if there is no password prompt, use --password <pw>):")
+        config.__dict__["password"] = getpass.getpass()
+
+    if config.auth_service not in ['ptc', 'google']:
+      log.error("Invalid Auth service specified! ('ptc' or 'google')")
+      return None
+
+    return config
+
+#hook up a pi and look into sudo raspi-config 
+
+
+def main():
+
+	#All LEDs should be disabled initially 
+    enable_led(led1, False)
+    enable_led(led2, False)
+    enable_led(led3, False)
+    # log format
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(module)10s] [%(levelname)5s] %(message)s')
+    # log level for http request class
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    # log level for main pgoapi class
+    logging.getLogger("pgoapi").setLevel(logging.INFO)
+    # log level for internal pgoapi class
+    logging.getLogger("rpc_api").setLevel(logging.INFO)
+
+    #load the config 
+    config = init_config()
+    #load the pgoapi
+    api = pgoapi.PGoapi()
+
+    
 
 
 
