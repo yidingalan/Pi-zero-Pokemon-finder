@@ -102,8 +102,18 @@ def main():
     config = init_config()
     #load the pgoapi
     api = pgoapi.PGoapi()
+    #get position
+    position = util.get_pos_by_name(config.location)
+    if not position:
+        log.error('Could not find the position')
+        return
+    elif config.test:
+        return
 
+    api.set_position(*position) 
+
+
+def findPokemon(api, latitude, longitude):
     
-
 
 
